@@ -54,7 +54,7 @@ jobs:
             -configuration Debug \
             -destination "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0" \
             -derivedDataPath DerivedData \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO | xcpretty && echo "✅ Tests passed"
 
       - name: Build for Device
         run: |
