@@ -18,11 +18,11 @@ env:
 
 jobs:
   build:
-    name: Build and Test
+    name: Build, Test & Package
     runs-on: macos-15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Select Xcode
@@ -30,7 +30,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_16.app
           xcodebuild -version
 
-      - name: Cache SPM dependencies
+      - name: Cache SPM
         uses: actions/cache@v4
         with:
           path: |
@@ -49,7 +49,7 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Resolve Swift Packages
+      - name: Resolve packages
         run: |
           xcodebuild -resolvePackageDependencies \
             -project "$PROJECT_NAME.xcodeproj" \
@@ -62,7 +62,7 @@ jobs:
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination "generic/platform=iOS" \
+            -sdk iphoneos \
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
 
@@ -77,6 +77,32 @@ jobs:
             -only-testing:UnitTests \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Locate .app
+        id: find_app
+        run: |
+          APP_PATH=$(find DerivedData/Build/Products -name "*.app" -type d | head -1)
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_OUTPUT
+          echo "Found app at: $APP_PATH"
+
+      - name: Package .app as ZIP
+        run: |
+          APP_PATH="${{ steps.find_app.outputs.APP_PATH }}"
+          if [ -d "$APP_PATH" ]; then
+            cd "$(dirname "$APP_PATH")"
+            zip -r "${{ runner.temp }}/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
+            echo "✅ App packaged: ${{ runner.temp }}/$PROJECT_NAME.zip"
+          else
+            echo "⚠️ .app not found at expected path, searching..."
+            find DerivedData -name "*.app" -type d
+          fi
+
+      - name: Upload App (.app.zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Photo-Enhancer-Pro
+          path: ${{ runner.temp }}/${{ env.PROJECT_NAME }}.zip
+          retention-days: 30
+
       - name: Upload build logs
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
@@ -84,63 +110,6 @@ jobs:
           name: build-logs
           path: DerivedData/Logs
           retention-days: 7
-
-  deploy:
-    name: Build IPA
-    needs: build
-    runs-on: macos-15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
-
-      - name: Install XcodeGen
-        run: |
-          if ! command -v xcodegen &> /dev/null; then
-            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
-          fi
-
-      - name: Generate project
-        run: xcodegen generate
-
-      - name: Archive
-        run: |
-          xcodebuild archive \
-            -project "$PROJECT_NAME.xcodeproj" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -archivePath DerivedData/$PROJECT_NAME.xcarchive \
-            -destination "generic/platform=iOS" \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive \
-            -archivePath DerivedData/$PROJECT_NAME.xcarchive \
-            -exportPath DerivedData/IPA \
-            -exportOptionsPlist Scripts/ExportOptions.plist \
-            CODE_SIGNING_ALLOWED=NO \
-            || echo "IPA export requires signing. Uploading archive instead."
-
-          # Create a zip of the archive as fallback
-          if (Test-Path "DerivedData/IPA/$PROJECT_NAME.ipa") {
-            echo "IPA exported successfully"
-          } else {
-            echo "Creating archive zip instead..."
-            Compress-Archive -Path "DerivedData/$PROJECT_NAME.xcarchive" -DestinationPath "DerivedData/$PROJECT_NAME.xcarchive.zip"
-          }
-
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: AI-Photo-Enhancer-Pro
-          path: |
-            DerivedData/IPA/*.ipa
-            DerivedData/*.xcarchive.zip
-          retention-days: 30
 
       - name: Create Release
         if: github.ref == 'refs/heads/main'
@@ -151,12 +120,15 @@ jobs:
           body: |
             ## Build ${{ github.run_number }}
 
-            ### Download
-            - Download the **AI-Photo-Enhancer-Pro** artifact from the workflow run.
-            - Extract and sideload the .app or .ipa using AltStore / SideStore.
+            ### التحميل
+            - اذهب إلى أسفل الصفحة
+            - في قسم **Artifacts**، اضغط على **AI-Photo-Enhancer-Pro**
+            - فك الضغط، ثم استخدم AltStore أو SideStore لتثبيت الـ .app
 
-            ### Changes
-            See [CHANGELOG](CHANGELOG.md) for details.
+            ### ملاحظة
+            هذا build بدون توقيع (unsigned). يحتاج sideload عبر AltStore أو SideStore.
+          files: |
+            ${{ runner.temp }}/${{ env.PROJECT_NAME }}.zip
           draft: false
           prerelease: true
           fail_on_unmatched_files: false
