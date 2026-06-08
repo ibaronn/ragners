@@ -56,40 +56,39 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO | xcpretty && echo "✅ Tests passed"
 
-      - name: Build for Device
-        continue-on-error: true
+      - name: Archive for Device
         run: |
           rm -rf DerivedData
-          xcodebuild build \
+          xcodebuild archive \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Debug \
+            -archivePath "$RUNNER_TEMP/$PROJECT_NAME.xcarchive" \
             -destination "generic/platform=iOS" \
-            -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Locate & Package .app
-        if: ${{ always() }}
+      - name: Build unsigned IPA
         run: |
-          echo "Searching for .app..."
-          find DerivedData -name "*.app" -type d 2>/dev/null
-          APP_PATH=$(find DerivedData -name "*.app" -type d -maxdepth 5 | head -1)
-          if [ -d "$APP_PATH" ]; then
-            echo "✅ Found app at: $APP_PATH"
-            ls -la "$APP_PATH" | head -10
-            cd "$(dirname "$APP_PATH")"
-            zip -r "$RUNNER_TEMP/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
-            echo "✅ Package size: $(wc -c < "$RUNNER_TEMP/$PROJECT_NAME.zip") bytes"
-          else
-            echo "⚠️ No .app found"
-          fi
+          # IPA = Zip with Payload/App.app inside
+          APP_PATH=$(find "$RUNNER_TEMP/$PROJECT_NAME.xcarchive" -name "*.app" -type d)
+          echo "App found: $APP_PATH"
+          ls -la "$APP_PATH" | head -5
 
-      - name: Upload App
-        if: ${{ always() }}
+          # Create IPA structure
+          PAYLOAD_DIR="$RUNNER_TEMP/Payload"
+          mkdir -p "$PAYLOAD_DIR"
+          cp -R "$APP_PATH" "$PAYLOAD_DIR/"
+
+          # Create IPA (zip → rename to .ipa)
+          cd "$RUNNER_TEMP"
+          zip -r "$PROJECT_NAME.ipa" Payload/
+          echo "✅ IPA size: $(wc -c < "$PROJECT_NAME.ipa") bytes"
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: AI-Photo-Enhancer-Pro
-          path: ${{ runner.temp }}/${{ env.PROJECT_NAME }}.zip
+          path: ${{ runner.temp }}/${{ env.PROJECT_NAME }}.ipa
           retention-days: 30
 
       - name: Upload build logs
