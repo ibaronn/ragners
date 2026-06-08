@@ -52,9 +52,8 @@ jobs:
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0" \
             -derivedDataPath DerivedData \
-            -only-testing:UnitTests \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Build for Device
