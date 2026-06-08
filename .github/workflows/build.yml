@@ -69,21 +69,23 @@ jobs:
 
       - name: Build unsigned IPA
         run: |
-          # Find .app in build output
-          APP_PATH=$(find DerivedData -name "*.app" -type d -maxdepth 5 | head -1)
+          echo "Searching in $(pwd)/DerivedData"
+          ls -R DerivedData/Build/Products/ 2>/dev/null || echo "No Products dir"
+
+          APP_PATH=$(find DerivedData -name "*.app" -type d 2>/dev/null | head -1)
           if [ ! -d "$APP_PATH" ]; then
-            echo "❌ No .app found"
+            echo "❌ No .app found in DerivedData"
+            find DerivedData -type d -maxdepth 6 2>/dev/null | head -20
             exit 1
           fi
           echo "✅ App: $APP_PATH ($(du -sh "$APP_PATH" | cut -f1))"
 
-          # IPA = Payload/App.app → zip → .ipa
           PAYLOAD="$RUNNER_TEMP/Payload"
           mkdir -p "$PAYLOAD"
           cp -R "$APP_PATH" "$PAYLOAD/"
           cd "$RUNNER_TEMP"
           zip -r "$PROJECT_NAME.ipa" Payload/
-          echo "✅ IPA: $(wc -c < "$PROJECT_NAME.ipa") bytes"
+          echo "✅ IPA: $(ls -lh "$PROJECT_NAME.ipa" | awk '{print $5}')"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
