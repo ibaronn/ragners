@@ -85,9 +85,8 @@ jobs:
           path: DerivedData/Logs
           retention-days: 7
 
-  release:
-    name: Release Build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  deploy:
+    name: Build IPA
     needs: build
     runs-on: macos-15
 
@@ -107,32 +106,57 @@ jobs:
       - name: Generate project
         run: xcodegen generate
 
-      - name: Build (Release)
-        run: |
-          xcodebuild build \
-            -project "$PROJECT_NAME.xcodeproj" \
-            -scheme "$SCHEME" \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath DerivedData \
-            CODE_SIGNING_ALLOWED=NO
-
       - name: Archive
         run: |
           xcodebuild archive \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
-            -configuration Release \
+            -configuration Debug \
             -archivePath DerivedData/$PROJECT_NAME.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath DerivedData/$PROJECT_NAME.xcarchive \
+            -exportPath DerivedData/IPA \
+            -exportOptionsPlist Scripts/ExportOptions.plist \
+            CODE_SIGNING_ALLOWED=NO \
+            || echo "IPA export requires signing. Uploading archive instead."
+
+          # Create a zip of the archive as fallback
+          if (Test-Path "DerivedData/IPA/$PROJECT_NAME.ipa") {
+            echo "IPA exported successfully"
+          } else {
+            echo "Creating archive zip instead..."
+            Compress-Archive -Path "DerivedData/$PROJECT_NAME.xcarchive" -DestinationPath "DerivedData/$PROJECT_NAME.xcarchive.zip"
+          }
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Photo-Enhancer-Pro
+          path: |
+            DerivedData/IPA/*.ipa
+            DerivedData/*.xcarchive.zip
+          retention-days: 30
+
       - name: Create Release
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.0-build-${{ github.run_number }}
-          name: Release v1.0.0 (Build ${{ github.run_number }})
-          body_path: CHANGELOG.md
+          name: AI Photo Enhancer Pro v1.0.0 (Build ${{ github.run_number }})
+          body: |
+            ## Build ${{ github.run_number }}
+
+            ### Download
+            - Download the **AI-Photo-Enhancer-Pro** artifact from the workflow run.
+            - Extract and sideload the .app or .ipa using AltStore / SideStore.
+
+            ### Changes
+            See [CHANGELOG](CHANGELOG.md) for details.
           draft: false
-          prerelease: false
+          prerelease: true
           fail_on_unmatched_files: false

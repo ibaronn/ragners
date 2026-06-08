@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct UploadCard: View {
     @Binding var selectedImage: Data?

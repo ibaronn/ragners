@@ -11,14 +11,16 @@ public final class HomeViewModel: BaseViewModel {
     private let imageRepository: ImageRepositoryProtocol
     private let cacheService: CacheService
     private let enhanceUseCase: EnhanceImageUseCase
+    private let aiRepository: AIEnhancementRepository
 
     public override init() {
         self.aiService = AIEnhancementService()
         self.imageRepository = ImageRepository()
         self.cacheService = CacheServiceImplementation()
+        self.aiRepository = AIEnhancementRepository()
         self.enhanceUseCase = EnhanceImageUseCase(
-            aiRepository: AIEnhancementRepository(),
-            imageRepository: ImageRepository()
+            aiRepository: aiRepository,
+            imageRepository: imageRepository
         )
         super.init()
         loadRecentImages()

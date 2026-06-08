@@ -85,8 +85,6 @@ public final class AIImageProcessingPipeline {
         guard max(width, height) > maxDimension else { return image }
 
         let scale = maxDimension / max(width, height)
-        let newWidth = Int(width * scale)
-        let newHeight = Int(height * scale)
 
         let inputImage = CIImage(cgImage: image)
         guard let filter = CIFilter(name: "CILanczosScaleTransform") else { return image }
@@ -96,8 +94,8 @@ public final class AIImageProcessingPipeline {
         filter.setValue(1.0, forKey: kCIInputAspectRatioKey)
 
         guard let outputImage = filter.outputImage else { return image }
-        let ciContext = CIContext(options: [.workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])
-        guard let result = ciContext.createCGImage(outputImage, from: outputImage.extent) else {
+        let context = CoreMLPhotoEnhancer.shared.ciContext
+        guard let result = context.createCGImage(outputImage, from: outputImage.extent) else {
             return image
         }
         return result

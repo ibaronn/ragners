@@ -6,12 +6,8 @@ public final class AIEnhancementService: AIService {
     public var isModelLoaded: Bool = true
 
     private let enhancer = CoreMLPhotoEnhancer.shared
-    private let processingQueue = OperationQueue()
 
-    public init() {
-        processingQueue.maxConcurrentOperationCount = 1
-        processingQueue.qualityOfService = .userInitiated
-    }
+    public init() {}
 
     public func loadModels() async throws {
         isModelLoaded = true

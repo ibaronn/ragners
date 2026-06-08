@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import Photos
 
 struct ExportSection: View {
@@ -103,14 +104,15 @@ struct ExportSection: View {
                 let creationRequest = PHAssetCreationRequest.forAsset()
                 let options = PHAssetResourceCreationOptions()
                 let data: Data
+                let uiImage = UIImage(data: processedImage) ?? UIImage()
 
                 switch exportFormat {
                 case .png:
-                    data = UIImage(data: processedImage)?.pngData() ?? processedImage
+                    data = uiImage.pngData() ?? processedImage
                 case .jpeg:
-                    data = UIImage(data: processedImage)?.jpegData(compressionQuality: 0.95) ?? processedImage
+                    data = uiImage.jpegData(compressionQuality: 0.95) ?? processedImage
                 case .heic:
-                    data = processedImage
+                    data = uiImage.heicData(compressionQuality: 0.95) ?? processedImage
                 }
 
                 creationRequest.addResource(with: .photo, data: data, options: options)

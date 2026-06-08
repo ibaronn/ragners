@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import ImageIO
 
 public final class ImageRepository: ImageRepositoryProtocol {
     private let fileManager: FileManager

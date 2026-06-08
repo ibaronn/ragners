@@ -3,11 +3,11 @@ import CoreGraphics
 import CoreImage
 import Accelerate
 import Metal
-import MetalPerformanceShaders
+
 
 public final class CoreMLPhotoEnhancer {
     public static let shared = CoreMLPhotoEnhancer()
-    private let ciContext: CIContext
+    public let ciContext: CIContext
     private let metalDevice: MTLDevice?
 
     private init() {
@@ -134,7 +134,7 @@ public final class CoreMLPhotoEnhancer {
         }
         smoothFilter.setValue(outputImage, forKey: kCIInputImageKey)
         smoothFilter.setValue(3.0, forKey: kCIInputRadiusKey)
-        smoothFilter.setValue(0.3, forKey: "inputEdgeStrengh")
+        smoothFilter.setValue(0.3, forKey: "inputEdgeIntensity")
         guard let finalImage = smoothFilter.outputImage else { return nil }
 
         return ciContext.createCGImage(finalImage, from: finalImage.extent)
@@ -170,12 +170,20 @@ public final class CoreMLPhotoEnhancer {
     public func autoEnhance(cgImage: CGImage) -> CGImage? {
         let inputImage = CIImage(cgImage: cgImage)
 
-        guard let autoFilter = CIFilter(name: "CIAutoAdjustmentFilter") else { return nil }
-        autoFilter.setValue(inputImage, forKey: kCIInputImageKey)
-        autoFilter.setValue(true, forKey: kCIInputRedEyeKey)
-        autoFilter.setValue(true, forKey: kCIInputEnhanceKey)
-        autoFilter.setValue(true, forKey: kCIInputShadowsKey)
-        guard let outputImage = autoFilter.outputImage else { return nil }
+        let adjustments = inputImage.autoAdjustmentFilters(
+            options: [
+                kCIInputRedEyeKey: true,
+                kCIImageAutoAdjustEnhance: true,
+                kCIImageAutoAdjustRedEye: true
+            ]
+        )
+        var outputImage = inputImage
+        for filter in adjustments {
+            filter.setValue(outputImage, forKey: kCIInputImageKey)
+            if let result = filter.outputImage {
+                outputImage = result
+            }
+        }
 
         return ciContext.createCGImage(outputImage, from: outputImage.extent)
     }

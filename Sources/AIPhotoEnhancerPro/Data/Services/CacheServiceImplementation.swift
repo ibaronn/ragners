@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 public final class CacheServiceImplementation: CacheService {
     private let cache = NSCache<NSString, CacheEntry>()
@@ -116,6 +117,7 @@ final class CacheEntry {
 private extension String {
     var md5: String {
         let data = Data(self.utf8)
-        return data.map { String(format: "%02x", $0) }.joined()
+        let hash = Insecure.MD5.hash(data: data)
+        return hash.map { String(format: "%02x", $0) }.joined()
     }
 }

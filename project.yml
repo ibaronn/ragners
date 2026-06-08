@@ -74,3 +74,4 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         SWIFT_VERSION: "6.0"
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        TEST_TARGET_NAME: AIPhotoEnhancerPro
