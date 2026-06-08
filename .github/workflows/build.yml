@@ -30,14 +30,6 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_16.app
           xcodebuild -version
 
-      - name: Cache SPM
-        uses: actions/cache@v4
-        with:
-          path: .build
-          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift') }}
-          restore-keys: |
-            spm-${{ runner.os }}-
-
       - name: Install XcodeGen
         run: |
           if ! command -v xcodegen &> /dev/null; then
@@ -54,18 +46,18 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath .build
 
-      - name: Build & Test for Simulator
+      - name: Run Unit Tests
         run: |
           xcodebuild test \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Debug \
-            -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
+            -destination "platform=iOS Simulator,name=iPhone 16 Pro" \
             -derivedDataPath DerivedData \
             -only-testing:UnitTests \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Build for Device (Packaging)
+      - name: Build for Device
         run: |
           xcodebuild build \
             -project "$PROJECT_NAME.xcodeproj" \
@@ -75,23 +67,17 @@ jobs:
             -derivedDataPath DerivedData \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Locate .app
-        id: find_app
+      - name: Locate & Package .app
         run: |
           APP_PATH=$(find DerivedData/Build/Products -name "*.app" -type d | head -1)
-          echo "APP_PATH=$APP_PATH" >> $GITHUB_OUTPUT
-          echo "Found app at: $APP_PATH"
-
-      - name: Package .app as ZIP
-        run: |
-          APP_PATH="${{ steps.find_app.outputs.APP_PATH }}"
           if [ -d "$APP_PATH" ]; then
+            echo "Found app at: $APP_PATH"
             cd "$(dirname "$APP_PATH")"
-            zip -r "${{ runner.temp }}/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
-            echo "✅ App packaged: ${{ runner.temp }}/$PROJECT_NAME.zip"
+            zip -r "$RUNNER_TEMP/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
+            echo "✅ App packaged: $RUNNER_TEMP/$PROJECT_NAME.zip"
           else
-            echo "⚠️ .app not found at expected path, searching..."
-            find DerivedData -name "*.app" -type d
+            echo "⚠️ .app not found!"
+            find DerivedData -name "*.app" -type d 2>/dev/null || echo "No .app found"
           fi
 
       - name: Upload App (.app.zip)
@@ -106,7 +92,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
-          path: DerivedData/Logs
+          path: |
+            DerivedData/Logs
+            DerivedData/Build/Logs
           retention-days: 7
 
       - name: Create Release
@@ -117,14 +105,7 @@ jobs:
           name: AI Photo Enhancer Pro v1.0.0 (Build ${{ github.run_number }})
           body: |
             ## Build ${{ github.run_number }}
-
-            ### التحميل
-            - اذهب إلى أسفل الصفحة
-            - في قسم **Artifacts**، اضغط على **AI-Photo-Enhancer-Pro**
-            - فك الضغط، ثم استخدم AltStore أو SideStore لتثبيت الـ .app
-
-            ### ملاحظة
-            هذا build بدون توقيع (unsigned). يحتاج sideload عبر AltStore أو SideStore.
+            التحميل من Artifacts بالأسفل
           files: |
             ${{ runner.temp }}/${{ env.PROJECT_NAME }}.zip
           draft: false
