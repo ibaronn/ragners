@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI Photo Enhancer Pro
 
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
@@ -204,3 +205,6 @@ AI Photo Enhancer Pro processes all images entirely on-device. No data is ever u
 ---
 
 *Built with SwiftUI and CoreML for iOS 17+*
+=======
+# ragners
+>>>>>>> a8abc53dd99aa3f0cb1dc48989fa7e4ad13eb468
