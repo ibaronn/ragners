@@ -71,15 +71,17 @@ jobs:
       - name: Locate & Package .app
         if: ${{ always() }}
         run: |
-          APP_PATH=$(find DerivedData/Build/Products -name "*.app" -type d | head -1)
+          echo "Searching for .app..."
+          find DerivedData -name "*.app" -type d 2>/dev/null
+          APP_PATH=$(find DerivedData -name "*.app" -type d -maxdepth 5 | head -1)
           if [ -d "$APP_PATH" ]; then
-            echo "Found app at: $APP_PATH"
+            echo "✅ Found app at: $APP_PATH"
+            ls -la "$APP_PATH" | head -10
             cd "$(dirname "$APP_PATH")"
             zip -r "$RUNNER_TEMP/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
-            echo "✅ App packaged: $RUNNER_TEMP/$PROJECT_NAME.zip"
+            echo "✅ Package size: $(wc -c < "$RUNNER_TEMP/$PROJECT_NAME.zip") bytes"
           else
-            echo "⚠️ No .app found. Searching..."
-            find DerivedData -name "*.app" -type d 2>/dev/null || echo "No .app at all"
+            echo "⚠️ No .app found"
           fi
 
       - name: Upload App
