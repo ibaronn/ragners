@@ -56,15 +56,21 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath .build
 
+      - name: Show build settings
+        run: |
+          xcodebuild -showBuildSettings \
+            -project "$PROJECT_NAME.xcodeproj" \
+            -scheme "$SCHEME" 2>&1 | head -50
+
       - name: Build (Debug)
         run: |
           xcodebuild build \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
-          -configuration Debug \
-          -destination "generic/platform=iOS" \
+            -configuration Debug \
+            -destination "generic/platform=iOS" \
             -derivedDataPath DerivedData \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tail -50
 
       - name: Run Unit Tests
         run: |
