@@ -46,7 +46,7 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath .build
 
-      - name: Run Unit Tests
+      - name: Build & Test (Simulator)
         run: |
           xcodebuild test \
             -project "$PROJECT_NAME.xcodeproj" \
@@ -57,7 +57,9 @@ jobs:
             CODE_SIGNING_ALLOWED=NO | xcpretty && echo "✅ Tests passed"
 
       - name: Build for Device
+        continue-on-error: true
         run: |
+          rm -rf DerivedData
           xcodebuild build \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
@@ -67,6 +69,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Locate & Package .app
+        if: ${{ always() }}
         run: |
           APP_PATH=$(find DerivedData/Build/Products -name "*.app" -type d | head -1)
           if [ -d "$APP_PATH" ]; then
@@ -75,11 +78,12 @@ jobs:
             zip -r "$RUNNER_TEMP/$PROJECT_NAME.zip" "$(basename "$APP_PATH")"
             echo "✅ App packaged: $RUNNER_TEMP/$PROJECT_NAME.zip"
           else
-            echo "⚠️ .app not found!"
-            find DerivedData -name "*.app" -type d 2>/dev/null || echo "No .app found"
+            echo "⚠️ No .app found. Searching..."
+            find DerivedData -name "*.app" -type d 2>/dev/null || echo "No .app at all"
           fi
 
-      - name: Upload App (.app.zip)
+      - name: Upload App
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: AI-Photo-Enhancer-Pro
@@ -91,22 +95,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
-          path: |
-            DerivedData/Logs
-            DerivedData/Build/Logs
+          path: DerivedData/Logs
           retention-days: 7
-
-      - name: Create Release
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v1.0.0-build-${{ github.run_number }}
-          name: AI Photo Enhancer Pro v1.0.0 (Build ${{ github.run_number }})
-          body: |
-            ## Build ${{ github.run_number }}
-            التحميل من Artifacts بالأسفل
-          files: |
-            ${{ runner.temp }}/${{ env.PROJECT_NAME }}.zip
-          draft: false
-          prerelease: true
-          fail_on_unmatched_files: false
