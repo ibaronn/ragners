@@ -17,7 +17,6 @@ targets:
     platform: iOS
     sources:
       - Sources/AIPhotoEnhancerPro
-      - Sources/Assets
     resources:
       - Sources/AIPhotoEnhancerPro/Resources
     info:
@@ -58,6 +57,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.aiphotopro.enhancer.unit-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
 
   UITests:
     type: bundle.ui-testing
@@ -69,3 +71,6 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.aiphotopro.enhancer.ui-tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
