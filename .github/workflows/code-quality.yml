@@ -1,0 +1,57 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict
+
+  test:
+    name: Unit Tests
+    runs-on: macos-15
+    needs: lint
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Run Swift tests
+        run: |
+          swift test \
+            --parallel \
+            --enable-code-coverage \
+            || swift test
+
+      - name: Generate coverage report
+        run: |
+          BIN_PATH="$(swift build --show-bin-path)"
+          XCRESULT_PATH=$(find "$BIN_PATH" -name "*.xctest" -type d)
+          xcrun llvm-cov export -format="lcov" \
+            "$XCRESULT_PATH" \
+            -instr-profile="$BIN_PATH/codecov/default.profdata" \
+            > coverage.lcov
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.lcov
+          fail_ci_if_error: false
