@@ -1,0 +1,71 @@
+name: AIPhotoEnhancerPro
+options:
+  bundleIdPrefix: com.aiphotopro
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  SWIFT_VERSION: "6.0"
+  SWIFT_STRICT_CONCURRENCY: complete
+  TARGETED_DEVICE_FAMILY: "1"
+
+targets:
+  AIPhotoEnhancerPro:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/AIPhotoEnhancerPro
+      - Sources/Assets
+    resources:
+      - Sources/AIPhotoEnhancerPro/Resources
+    info:
+      path: Sources/AIPhotoEnhancerPro/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: AI Photo Enhancer Pro
+        CFBundleShortVersionString: "1.0.0"
+        CFBundleVersion: "1"
+        LSRequiresIPhoneOS: true
+        NSCameraUsageDescription: AI Photo Enhancer Pro needs camera access to capture photos for enhancement.
+        NSPhotoLibraryUsageDescription: AI Photo Enhancer Pro needs photo library access to import and save enhanced images.
+        NSPhotoLibraryAddUsageDescription: AI Photo Enhancer Pro needs permission to save enhanced images to your photo library.
+        UIRequiredDeviceCapabilities: [armv8, metal]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        LSSupportsOpeningDocumentsInPlace: true
+        UIFileSharingEnabled: true
+    entitlements:
+      path: Sources/AIPhotoEnhancerPro/Resources/app.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiphotopro.enhancer
+        INFOPLIST_FILE: Sources/AIPhotoEnhancerPro/Resources/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        ENABLE_PREVIEWS: YES
+        GENERATE_INFOPLIST_FILE: NO
+
+  UnitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/UnitTests
+    dependencies:
+      - target: AIPhotoEnhancerPro
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiphotopro.enhancer.unit-tests
+
+  UITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Tests/UITests
+    dependencies:
+      - target: AIPhotoEnhancerPro
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aiphotopro.enhancer.ui-tests
